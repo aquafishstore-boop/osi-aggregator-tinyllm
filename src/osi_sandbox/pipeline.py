@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any, Literal
 
 from osi_sandbox.analyze import OllamaAnalyzer
@@ -35,7 +35,7 @@ async def run_pipeline(
             "state": "running",
             "run_id": run_id,
             "mode": mode,
-            "started_at": datetime.now(timezone.utc).isoformat(),
+            "started_at": datetime.now(UTC).isoformat(),
             "error": None,
         }
     )
@@ -92,7 +92,7 @@ async def run_pipeline(
                 fine_md = await analyzer.fine(fine_pack, focus=str(fine_pack.get("focus")))
                 store.write_report_text(run_id, "fine.md", fine_md)
 
-        meta["completed_at"] = datetime.now(timezone.utc).isoformat()
+        meta["completed_at"] = datetime.now(UTC).isoformat()
         store.write_meta(run_id, meta)
 
         status = {
@@ -121,7 +121,7 @@ async def run_pipeline(
                 "run_id": run_id,
                 "mode": mode,
                 "error": str(exc),
-                "finished_at": datetime.now(timezone.utc).isoformat(),
+                "finished_at": datetime.now(UTC).isoformat(),
             }
         )
         raise
