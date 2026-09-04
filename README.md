@@ -25,12 +25,17 @@ osirisai.live /api  â†’  worker (ingest + consolidate)  â†’  Ollama (b
 Prerequisites: Docker Desktop (or Engine + Compose) with network access to pull images and reach `osirisai.live`.
 
 ```bash
-cd osi-sandbox
+cd osi-aggregator-tinyllm   # or this repo root
 cp .env.example .env
 docker compose up --build -d
 ```
 
 First boot pulls `qwen2.5:1.5b` into the Ollama volume (can take several minutes).
+
+| Service | Host port |
+|---------|-----------|
+| FastAPI | `8787` |
+| Ollama  | `11435` → container `11434` (avoids clash with another local Ollama on `11434`) |
 
 ### One-shot run (no schedule)
 

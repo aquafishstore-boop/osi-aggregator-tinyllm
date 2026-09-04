@@ -4,7 +4,8 @@ services:
     volumes:
       - ollama_data:/root/.ollama
     ports:
-      - "11434:11434"
+      # Host 11435 avoids clash if another Ollama already uses 11434
+      - "11435:11434"
     healthcheck:
       test: ["CMD", "ollama", "list"]
       interval: 15s
