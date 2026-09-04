@@ -56,8 +56,9 @@ docker compose run --rm --no-deps -e WORKER_MODE=once worker \
 
 | Method | Path | Purpose |
 |--------|------|---------|
-| GET | `/health` | Liveness |
+| GET | `/health` | Liveness (+ storage backend summary) |
 | GET | `/status` | Current / last run |
+| GET | `/storage` | Configured storage backend + auth posture (no secrets) |
 | GET | `/feeds` | Catalog + deny-list |
 | POST | `/run` | `{ "mode": "full", "focus": "earthquakes", "wait": false }` |
 | GET | `/reports/latest` | Latest consolidated + markdown |
@@ -84,6 +85,39 @@ See [`.env.example`](.env.example).
 | `CORE_FEEDS` | (all core) | Comma-separated feed ids |
 | `TOP_N` | `12` | Items kept per feed after consolidation |
 | `SANDBOX_API_PORT` | `8787` | Host port for FastAPI |
+
+## Storage (local / cloud / encrypted)
+
+Snapshots (**data**), consolidated packs (**analysis**), and broad/fine briefings
+(**agentic outputs**) are written through a pluggable storage backend selected by
+`STORAGE_BACKEND`:
+
+| Backend | Value | Auth |
+|---------|-------|------|
+| Local filesystem | `local` (default) | none |
+| S3-compatible (AWS S3 / R2 / MinIO) | `s3` | API credentials (access key + secret, optional session token) |
+| Token HTTP object store | `http` | PAT / API token (`Authorization: Bearer …`) |
+
+**Policy:** any non-local backend **must** be authenticated with a PAT / API token
+(or cloud credentials). If the token/credentials are missing, the process **fails
+closed at startup** — it will not silently write to an unauthenticated destination.
+
+Optional client-side **encryption at rest** (`STORAGE_ENCRYPTION=true` +
+`STORAGE_ENCRYPTION_KEY`) wraps any backend with Fernet, so cloud/remote stores only
+ever receive ciphertext. Generate a key:
+
+```bash
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
+
+Inspect the active configuration (no secrets are returned):
+
+```bash
+curl -s http://localhost:8787/storage
+```
+
+The `s3` backend needs the optional extra: `pip install 'osi-sandbox[s3]'`.
+See [`.env.example`](.env.example) for all storage variables.
 
 ## Local Python (without Docker)
 
