@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 from osi_sandbox.config import get_settings
 from osi_sandbox.feeds import CORE_FEED_IDS, DENIED_PATHS, FEEDS, SYSTEM_FEED_IDS
 from osi_sandbox.pipeline import run_pipeline
+from osi_sandbox.storage import describe_storage
 from osi_sandbox.store import Store
 
 logging.basicConfig(
@@ -44,12 +45,25 @@ class RunRequest(BaseModel):
 @app.get("/health")
 async def health() -> dict[str, Any]:
     settings = get_settings()
+    storage = describe_storage(settings)
     return {
         "ok": True,
         "service": "osi-sandbox",
         "osiris_base_url": settings.osiris_base_url,
         "ollama_model": settings.ollama_model,
+        "storage": {
+            "backend": storage["backend"],
+            "encrypted": storage["encrypted"],
+            "auth": storage["auth"],
+            "ok": storage["ok"],
+        },
     }
+
+
+@app.get("/storage")
+async def storage_status() -> dict[str, Any]:
+    """Report the configured storage backend + auth posture (no secrets)."""
+    return describe_storage(get_settings())
 
 
 @app.get("/status")
@@ -134,7 +148,7 @@ async def get_report(run_id: str) -> dict[str, Any]:
     run_id = _safe_run_id(run_id)
     store = Store()
     meta = store.read_meta(run_id)
-    if meta is None and not (store.reports / run_id).exists():
+    if meta is None and not store.report_exists(run_id):
         raise HTTPException(status_code=404, detail="Run not found")
     return {
         "run_id": run_id,

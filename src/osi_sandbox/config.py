@@ -47,6 +47,38 @@ class Settings(BaseSettings):
         alias="USER_AGENT",
     )
 
+    # -- Storage backend (data / analysis / agentic outputs) --------------------
+    # local: filesystem (no auth). s3/http: require a PAT / API token / creds.
+    storage_backend: str = Field(default="local", alias="STORAGE_BACKEND")
+    storage_encryption: bool = Field(default=False, alias="STORAGE_ENCRYPTION")
+    storage_encryption_key: str | None = Field(
+        default=None, alias="STORAGE_ENCRYPTION_KEY"
+    )
+
+    # http backend (token-authenticated REST object store)
+    storage_http_url: str | None = Field(default=None, alias="STORAGE_HTTP_URL")
+    storage_http_token: str | None = Field(default=None, alias="STORAGE_HTTP_TOKEN")
+    storage_http_verify_tls: bool = Field(
+        default=True, alias="STORAGE_HTTP_VERIFY_TLS"
+    )
+
+    # s3-compatible backend (AWS S3 / R2 / MinIO)
+    storage_s3_bucket: str | None = Field(default=None, alias="STORAGE_S3_BUCKET")
+    storage_s3_prefix: str | None = Field(default=None, alias="STORAGE_S3_PREFIX")
+    storage_s3_endpoint_url: str | None = Field(
+        default=None, alias="STORAGE_S3_ENDPOINT_URL"
+    )
+    storage_s3_region: str | None = Field(default=None, alias="STORAGE_S3_REGION")
+    storage_s3_access_key_id: str | None = Field(
+        default=None, alias="STORAGE_S3_ACCESS_KEY_ID"
+    )
+    storage_s3_secret_access_key: str | None = Field(
+        default=None, alias="STORAGE_S3_SECRET_ACCESS_KEY"
+    )
+    storage_s3_session_token: str | None = Field(
+        default=None, alias="STORAGE_S3_SESSION_TOKEN"
+    )
+
     def core_feed_id_list(self) -> list[str] | None:
         if not self.core_feeds:
             return None
