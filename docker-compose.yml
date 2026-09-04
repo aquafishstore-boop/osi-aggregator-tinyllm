@@ -1,0 +1,88 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 15s
+      timeout: 10s
+      retries: 12
+      start_period: 30s
+
+  ollama-init:
+    image: curlimages/curl:8.5.0
+    depends_on:
+      - ollama
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:1.5b}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        echo "Waiting for Ollama at $$OLLAMA_HOST..."
+        i=0
+        until curl -sf "$$OLLAMA_HOST/api/tags" >/dev/null; do
+          i=$$((i+1))
+          if [ "$$i" -gt 60 ]; then
+            echo "Ollama did not become ready in time"
+            exit 1
+          fi
+          sleep 2
+        done
+        echo "Pulling $$OLLAMA_MODEL..."
+        curl -sf "$$OLLAMA_HOST/api/pull" -d "{\"name\":\"$$OLLAMA_MODEL\"}"
+        echo
+        echo "Model ready."
+    restart: "no"
+
+  worker:
+    build: .
+    depends_on:
+      ollama:
+        condition: service_started
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      OSIRIS_BASE_URL: ${OSIRIS_BASE_URL:-https://osirisai.live}
+      OLLAMA_BASE_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:1.5b}
+      DATA_DIR: /data
+      POLL_INTERVAL_SEC: ${POLL_INTERVAL_SEC:-120}
+      WORKER_MODE: ${WORKER_MODE:-schedule}
+      PROMPTS_DIR: /app/prompts
+    volumes:
+      - ./data:/data
+      - ./prompts:/app/prompts:ro
+    command: ["python", "-m", "osi_sandbox.worker"]
+    restart: unless-stopped
+
+  api:
+    build: .
+    depends_on:
+      - worker
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      OSIRIS_BASE_URL: ${OSIRIS_BASE_URL:-https://osirisai.live}
+      OLLAMA_BASE_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:1.5b}
+      DATA_DIR: /data
+      PROMPTS_DIR: /app/prompts
+      API_HOST: 0.0.0.0
+      API_PORT: 8787
+    volumes:
+      - ./data:/data
+      - ./prompts:/app/prompts:ro
+    ports:
+      - "${SANDBOX_API_PORT:-8787}:8787"
+    command: ["python", "-m", "osi_sandbox.api"]
+    restart: unless-stopped
+
+volumes:
+  ollama_data:
