@@ -36,14 +36,22 @@ mkdir -p "${REPO_ROOT}/data/snapshots" "${REPO_ROOT}/data/reports"
 
 echo "==> Ollama (local tiny-LLM runtime)"
 if ! command -v ollama >/dev/null 2>&1; then
-  curl -fsSL https://ollama.com/install.sh | sh
+  ollama_install_script="$(mktemp)"
+  trap 'rm -f "$ollama_install_script"' EXIT
+  curl -fsSL https://ollama.com/install.sh -o "$ollama_install_script"
+  sh "$ollama_install_script"
 fi
 
 echo "==> Pre-pull model ${OLLAMA_MODEL}"
-if ! curl -sf "http://${OLLAMA_HOST}/api/tags" >/dev/null 2>&1; then
+OLLAMA_URL="${OLLAMA_HOST}"
+case "$OLLAMA_URL" in
+  http://*|https://*) ;;
+  *) OLLAMA_URL="http://${OLLAMA_URL}" ;;
+esac
+if ! curl -sf "${OLLAMA_URL}/api/tags" >/dev/null 2>&1; then
   nohup ollama serve >/tmp/ollama-install-serve.log 2>&1 &
   for _ in $(seq 1 30); do
-    curl -sf "http://${OLLAMA_HOST}/api/tags" >/dev/null 2>&1 && break
+    curl -sf "${OLLAMA_URL}/api/tags" >/dev/null 2>&1 && break
     sleep 1
   done
 fi

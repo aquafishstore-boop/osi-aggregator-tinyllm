@@ -5,12 +5,12 @@
   "terminals": [
     {
       "name": "api",
-      "command": "source .venv/bin/activate && OLLAMA_BASE_URL=http://127.0.0.1:11434 PROMPTS_DIR=/workspace/prompts DATA_DIR=/workspace/data python -m osi_sandbox.api",
+      "command": ". .venv/bin/activate && OLLAMA_BASE_URL=http://127.0.0.1:11434 PROMPTS_DIR=$PWD/prompts DATA_DIR=$PWD/data python -m osi_sandbox.api",
       "description": "FastAPI service on :8787. Endpoints: /health, /status, /feeds, POST /run, /reports/latest."
     },
     {
       "name": "worker",
-      "command": "source .venv/bin/activate && OLLAMA_BASE_URL=http://127.0.0.1:11434 PROMPTS_DIR=/workspace/prompts DATA_DIR=/workspace/data python -m osi_sandbox.worker",
+      "command": ". .venv/bin/activate && OLLAMA_BASE_URL=http://127.0.0.1:11434 PROMPTS_DIR=$PWD/prompts DATA_DIR=$PWD/data python -m osi_sandbox.worker",
       "description": "Scheduled passive-feed ingest + broad/fine tiny-LLM analysis loop (POLL_INTERVAL_SEC, default 120s)."
     }
   ],
